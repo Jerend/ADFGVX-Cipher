@@ -1,25 +1,18 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
 from typing import Optional
-from app.cipher import ADFGVXCipher
 
 router = APIRouter(prefix="/api/encrypt", tags=["encryption"])
 
-cipher_instance = None
-
-def get_cipher():
-    global cipher_instance
-    if cipher_instance is None:
-        cipher_instance = ADFGVXCipher()
-    return cipher_instance
-
 @router.post("/")
 async def encrypt(
+    request: Request,
     plaintext: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
-    use_generated_grid: bool = Form(True),
-    cipher: ADFGVXCipher = Depends(get_cipher)
+    use_generated_grid: bool = Form(True)
 ):
     """Шифрует текст из строки или файла"""
+    cipher = request.app.state.cipher
+    
     if not cipher.grid:
         if use_generated_grid:
             cipher.generate_grid()

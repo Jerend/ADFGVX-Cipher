@@ -1,27 +1,20 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
 from typing import Optional
 import json
-from app.cipher import ADFGVXCipher
 
 router = APIRouter(prefix="/api/decrypt", tags=["decryption"])
 
-cipher_instance = None
-
-def get_cipher():
-    global cipher_instance
-    if cipher_instance is None:
-        cipher_instance = ADFGVXCipher()
-    return cipher_instance
-
 @router.post("/")
 async def decrypt(
+    request: Request,
     ciphertext: Optional[str] = Form(None),
     cipher_file: Optional[UploadFile] = File(None),
     grid_file: UploadFile = File(...),
-    permutation_file: UploadFile = File(...),
-    cipher: ADFGVXCipher = Depends(get_cipher)
+    permutation_file: UploadFile = File(...)
 ):
     """Дешифрует текст с использованием загруженных таблиц"""
+    cipher = request.app.state.cipher
+    
     try:
         # Загружаем таблицу шифра
         grid_content = await grid_file.read()

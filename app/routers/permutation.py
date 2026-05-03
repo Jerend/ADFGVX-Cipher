@@ -1,31 +1,24 @@
-from fastapi import APIRouter, HTTPException, Depends, Form
-from app.cipher import ADFGVXCipher
+from fastapi import APIRouter, HTTPException, Form, Request
 
 router = APIRouter(prefix="/api/permutation", tags=["permutation"])
 
-cipher_instance = None
-
-def get_cipher():
-    global cipher_instance
-    if cipher_instance is None:
-        cipher_instance = ADFGVXCipher()
-    return cipher_instance
-
 @router.post("/generate")
 async def generate_permutation(
-    keyword: str = Form(...),
-    cipher: ADFGVXCipher = Depends(get_cipher)
+    request: Request,
+    keyword: str = Form(...)
 ):
     """Генерирует таблицу перестановки на основе ключевого слова"""
     if not keyword:
         raise HTTPException(status_code=400, detail="Keyword is required")
     
+    cipher = request.app.state.cipher
     perm_table = cipher.generate_permutation_table(keyword)
     return perm_table
 
 @router.get("/current")
-async def get_current_permutation(cipher: ADFGVXCipher = Depends(get_cipher)):
+async def get_current_permutation(request: Request):
     """Возвращает текущую таблицу перестановки"""
+    cipher = request.app.state.cipher
     if not cipher.keyword:
         return {"permutation": None}
     
@@ -33,8 +26,9 @@ async def get_current_permutation(cipher: ADFGVXCipher = Depends(get_cipher)):
     return perm_table
 
 @router.get("/export")
-async def export_permutation(cipher: ADFGVXCipher = Depends(get_cipher)):
+async def export_permutation(request: Request):
     """Экспортирует текущую таблицу перестановки в JSON"""
+    cipher = request.app.state.cipher
     if not cipher.keyword:
         raise HTTPException(status_code=400, detail="No permutation table to export")
     
